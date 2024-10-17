@@ -1,0 +1,135 @@
+create DATABASE upang_eats;
+
+CREATE TABLE users (
+    user_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    student_id varchar(14) UNIQUE,
+    first_name VARCHAR(255),
+    last_name VARCHAR(255),
+    email VARCHAR(255) UNIQUE,
+    password VARCHAR(255),
+    phone_number VARCHAR(11),
+    user_type ENUM('user', 'stall_owner') DEFAULT 'user'
+);
+
+CREATE TABLE stalls (
+    stall_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    stall_name VARCHAR(255) NOT NULL,
+    owner_id INT REFERENCES users(user_id),
+    description TEXT,
+    contact_number VARCHAR(11),
+    image_url VARCHAR(255),
+    image_banner_url VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE food_items (
+    item_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    stall_id INT REFERENCES stalls(stall_id),
+    item_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price int(10) NOT NULL,
+    image_url VARCHAR(255),
+    is_available BOOLEAN DEFAULT TRUE,
+    is_breakfast BOOLEAN DEFAULT FALSE,
+    is_lunch BOOLEAN DEFAULT FALSE,
+    is_merienda BOOLEAN DEFAULT FALSE
+);
+
+-- user is still browsing/adding items stage
+CREATE TABLE trays (
+    tray_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT REFERENCES users(user_id),
+    item_id INT REFERENCES food_items(item_id),
+    quantity INT NOT NULL
+);
+
+-- Confirmed tray and successful payment
+-- One order can have multiple items therefore we created a one to many relationship (order_items table)
+-- Why we shouldn't make the order(receipt) have multiple stall because of the order_status
+-- Meaning if we create a many-to-many relationship with order_stall that can make the order(receipt) have many stalls
+-- It would complicate the order_status, what if the order_items are ready in stall #1 and the order_items in stall #2 is cancelled due to unexpected circumstance
+-- how will the order(receipt) handles the order status?
+CREATE TABLE orders (
+    order_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT REFERENCES users(user_id),
+    stall_id INT REFERENCES stalls(stall_id),
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_amount INT(10) NOT NULL,
+    order_status ENUM('pending', 'accepted', 'ready', 'completed', 'cancelled') DEFAULT 'pending'
+);
+
+CREATE TABLE order_items (
+    order_item_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    order_id INT REFERENCES orders(order_id),
+    item_id INT REFERENCES food_items(item_id),
+    quantity INT NOT NULL,
+    subtotal INT(10) NOT NULL
+);
+
+CREATE TABLE bookmarks (
+    bookmark_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id INT REFERENCES users(user_id),
+    item_id INT REFERENCES food_items(item_id),
+    stall_id INT REFERENCES stalls(stall_id)
+);
+
+CREATE TABLE categories (
+    category_id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(255) NOT NULL
+);
+
+-- (Many-to-Many relationship)
+CREATE TABLE food_item_categories (
+    food_item_id int NOT NULL REFERENCES food_items(item_id),
+    category_id int NOT NULL REFERENCES categories(category_id),
+    PRIMARY KEY (food_item_id, category_id)
+);
+
+//users record
+INSERT INTO `users` (`user_id`, `student_id`, `first_name`, `last_name`, `email`, `password`, `phone_number`, `user_type`) VALUES
+(1, '03-2223-040518', 'Christian Jose', 'Soriano', 'soriano.christianjose.m@gmail.com', 'password', NULL, 'user'),
+(2, '03-2223-000000', 'Ritchmarc', 'Bustillo', 'ritchmarc.bustillo@gmail.com', 'password', NULL, 'stall_owner'),
+(3, '03-2223-111111', 'Nervin', 'Ferrer', 'nervin.ferrer@gmail.com', 'password', NULL, 'stall_owner'),
+(4, '03-2223-222222', 'Kenth', 'Marasigan', 'kenth.marasigan@gmail.com', 'password', NULL, 'stall_owner'),
+(7, '03-2223-333333', 'Guerrero', 'Katherine', 'katherine.guerrero@gmail.com', 'password', NULL, 'stall_owner');
+
+//stalls record
+INSERT INTO `stalls` (`stall_id`, `stall_name`, `owner_id`, `description`, `contact_number`, `image_url`, `image_banner_url`, `is_active`) VALUES
+(1, 'Boss Sisig!', 2, NULL, NULL, 'BossSisigProfile.jpg', 'BossSisigBanner.jpg', 1),
+(2, 'Ninong Ry’s Special Delicacy Stall', 3, NULL, NULL, 'NinongRySpecialDelicacy.jpg', 'NinongRySpecialDelicacyBanner.jpg', 1),
+(3, 'Mekus Mekus Tayo Insan!', 4, NULL, NULL, 'MekusMekusTayoInsan.jpg', 'MekusMekusTayoInsanBanner.jpeg', 1),
+(4, 'Masamsamit So Adele', 7, NULL, NULL, 'MasamsamitSoAdele.jpg', 'MasamsamitSoAdeleBanner.jpg', 1);
+
+//Categories record
+INSERT INTO `categories`(`category_name`) VALUES ('Snack'), ('Burger'), ('Rice Meal'), ('Drinks'), ('Noodles'), ('Dimsum'), ('Fries'), ('Bread');
+
+//Food items record (stalls record is required)
+INSERT INTO `food_items` (`stall_id`, `item_name`, `description`, `price`, `image_url`, `is_available`, `is_breakfast`, `is_lunch`, `is_merienda`) 
+VALUES 
+-- Stall 1
+(1, 'Lumpiang Shanghai', 'Deep-fried spring rolls with meat filling', 50.00, '', 1, 0, 1, 1),
+(1, 'Chicken Burger', 'Chicken patty in a soft bun with lettuce and mayo', 75.00, '', 1, 0, 1, 0),
+(1, 'Tapsilog', 'Beef tapa with fried egg and garlic rice', 120.00, '', 1, 1, 1, 0),
+(1, 'Pancit Canton', 'Stir-fried noodles with vegetables and meat', 65.00, '', 1, 0, 1, 1),
+(1, 'Siomai', 'Steamed pork dumplings served with soy sauce', 35.00, '', 1, 0, 1, 1),
+
+-- Stall 2
+(2, 'Turon', 'Banana wrapped in spring roll wrapper and fried', 20.00, '', 1, 0, 0, 1),
+(2, 'Cheeseburger', 'Juicy beef patty with cheese in a bun', 85.00, '', 1, 0, 1, 0),
+(2, 'Adobo Rice Meal', 'Savory chicken adobo with rice', 110.00, '', 1, 1, 1, 0),
+(2, 'Buko Juice', 'Fresh coconut juice', 30.00, '', 1, 0, 1, 1),
+(2, 'Kikiam', 'Deep-fried pork sausage served with sauce', 35.00, '', 1, 0, 1, 1),
+
+-- Stall 3
+(3, 'Banana Cue', 'Caramelized bananas on a stick', 25.00, '', 1, 0, 0, 1),
+(3, 'Double Burger', 'Double beef patty with cheese and bacon', 120.00, '', 1, 0, 1, 0),
+(3, 'Longsilog', 'Sweet longganisa with fried egg and garlic rice', 95.00, '', 1, 1, 1, 0),
+(3, 'Mami Noodles', 'Hot beef noodle soup', 70.00, '', 1, 0, 1, 1),
+(3, 'French Fries', 'Crispy potato fries', 45.00, '', 1, 0, 1, 1),
+
+-- Stall 4
+(4, 'Puto', 'Steamed rice cakes', 15.00, '', 1, 0, 0, 1),
+(4, 'Bacon Cheeseburger', 'Beef patty with bacon and cheese', 105.00, '', 1, 0, 1, 0),
+(4, 'Lechon Kawali Meal', 'Crispy fried pork belly with rice', 130.00, '', 1, 1, 1, 0),
+(4, 'Sago’t Gulaman', 'Sweet tapioca pearls and gelatin drink', 25.00, '', 1, 0, 1, 1),
+(4, 'Siopao', 'Steamed bun with pork filling', 40.00, '', 1, 0, 1, 1);
