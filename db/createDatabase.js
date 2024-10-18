@@ -8,8 +8,22 @@ exports.createDatabase = async () => {
       host: "localhost",
       user: "root",
       password: "",
-      database: "upang_eats",
       multipleStatements: true,
+    });
+
+    const dbName = "upang_eats";
+
+    sqlCreate = `
+      CREATE DATABASE IF NOT EXISTS ${dbName}; 
+      USE ${dbName};
+    `;
+
+    connection.query(sqlCreate, (err, result) => {
+      if (err) {
+        console.error("Error creating database:", err.stack);
+        return;
+      }
+      console.log(`Database "${dbName}" created successfully`);
     });
 
     const dumpFilePath = path.join(__dirname, "upang_eats.sql");
